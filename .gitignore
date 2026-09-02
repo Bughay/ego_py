@@ -1,0 +1,6 @@
+.env
+.venv
+oldagent
+.ego
+__pycache__
+

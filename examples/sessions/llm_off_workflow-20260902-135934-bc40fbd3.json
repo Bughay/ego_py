@@ -1,0 +1,70 @@
+{
+  "1": {
+    "type": "llm_call",
+    "agent": "DeepseekLLM",
+    "task": null,
+    "metadata": {
+      "session_id": "bc40fbd3c8d04298be410b10ecb48f1d",
+      "session_name": "llm_off_workflow",
+      "agent_class": "DeepseekLLM",
+      "agent_type": null,
+      "model": "deepseek-v4-flash",
+      "max_tokens": 10000,
+      "temperature": 0.5,
+      "response_format": null,
+      "tool_choice": null,
+      "reasoning_effort": "low",
+      "tools": [],
+      "instruction": null,
+      "directory": null,
+      "started_at": "2026-09-02T13:59:31.333+00:00",
+      "finished_at": "2026-09-02T13:59:34.024+00:00",
+      "duration_s": 2.6907
+    },
+    "memory": [
+      {
+        "role": "system",
+        "content": "You are a helpful, brief assistant."
+      },
+      {
+        "role": "user",
+        "content": "In one sentence, what is a config dict?"
+      },
+      {
+        "role": "assistant",
+        "content": "A config dict is a key-value mapping (like a Python dictionary) that stores configuration settings and parameters for an application, library, or system, allowing centralized and flexible control of its behavior."
+      }
+    ],
+    "llm_calls": [
+      {
+        "timestamp": "2026-09-02T13:59:31.333+00:00",
+        "provider": "DeepseekLLM",
+        "model": "deepseek-v4-flash",
+        "settings": {
+          "max_tokens": 10000,
+          "temperature": 0.5,
+          "response_format": null,
+          "tool_choice": null,
+          "reasoning_effort": "low",
+          "tools": []
+        },
+        "input_message_count": 2,
+        "duration_s": 2.6907,
+        "output": {
+          "reasoning": "1.  The user asks for a one-sentence definition of a \"config dict\".\n2.  \"Config dict\" typically refers to a dictionary (in Python, or similar key-value structure) used for configuration settings.\n3.  Keep it brief and clear.",
+          "content": "A config dict is a key-value mapping (like a Python dictionary) that stores configuration settings and parameters for an application, library, or system, allowing centralized and flexible control of its behavior.",
+          "tool_calls": []
+        },
+        "appended_messages": [
+          {
+            "role": "assistant",
+            "content": "A config dict is a key-value mapping (like a Python dictionary) that stores configuration settings and parameters for an application, library, or system, allowing centralized and flexible control of its behavior."
+          }
+        ],
+        "call": 1
+      }
+    ],
+    "tool_events": [],
+    "step": 1
+  }
+}
