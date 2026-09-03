@@ -19,7 +19,6 @@ included):
     workflow_plain_react() -> <session_path>/plain_react_workflow-*.json (1 step)
     workflow_summarize_add_subtract()    -> react agent where summarize fires
     workflow_summarize_multiply_divide() -> react agent where summarize fires
-    workflow_skills()                    -> skill discovery + prompt injection demo
 
     python main.py
 """
@@ -28,19 +27,17 @@ from dotenv import load_dotenv
 from examples import (
     workflow_agents,
     workflow_classify,
+    workflow_llm_features,
     workflow_one_shot,
     workflow_plain_react,
-    workflow_skills,
     workflow_summarize_add_subtract,
     workflow_summarize_multiply_divide,
-    concurrency,
-    new_config_workflow
 )
 
 
 def main():
     load_dotenv()
-    new_config_workflow()
+    workflow_agents()
 
 
 if __name__ == "__main__":

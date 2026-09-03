@@ -94,11 +94,11 @@ class BaseLLM(ABC):
         self.tool_choice = tool_choice
 
         # Validate + normalize the raw config through the shared schema
-        # (  in ego_py/llm/models.py). The result is a private
+        # (ConfigModel in ego_py/llm/config.py). The result is a private
         # plain-dict copy, so later mutations of the caller's dict cannot
         # leak in; absent keys stay absent and defaults are applied lazily
         # via config.get() below.
-        self.config = ConfigModel.from_dict(config).to_dict()
+        self.config = ConfigModel(config).validate()
 
         # Skill discovery: skills_metadata stays None unless skills are
         # enabled. When config["skills"] names a directory, scan it for .md

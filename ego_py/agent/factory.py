@@ -15,8 +15,8 @@
     agent="react"         -> ReActAgent
     agent="plan-execute"  -> PlanExecuteAgent
     agent="plan-react"    -> PlanReactAgent
-    agent="plan-react-async" -> PlanReactAsyncAgent (plan steps run
-                              concurrently; accepts max_workers)
+    agent="agent-swarm"    -> AgentSwarm (plan steps run concurrently;
+                              accepts max_workers)
 
 `model` decides the provider:
     "deepseek*"  -> DeepseekLLM    (e.g. DeepseekLLMReActAgent)
@@ -80,7 +80,7 @@ class EgoAgent:
         else:
             raise ValueError(f"Unknown agent {agent!r}; "
                              f"use 'react', 'plan-execute', 'plan-react' "
-                             f"or 'plan-react-async'")
+                             f"or 'agent-swarm'")
 
         # --- step 2: check `model` -> pick the provider class --------------
         if model.startswith("deepseek"):

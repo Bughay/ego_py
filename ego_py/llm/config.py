@@ -17,73 +17,95 @@ keys:
 
 Any other key must map to a str value (arbitrary user metadata) and is
 preserved verbatim. Absent keys are not stored at all — defaults are
-applied lazily through ``config.get(...)`` — so ``ConfigModel.from_dict(None)``
+applied lazily through ``config.get(...)`` — so ``ConfigModel(None)``
 normalizes to the exact same ``{}`` the library has always used.
 
-The dataclass field for the ``"agents.md"`` key is ``agents_md`` because
-Python identifiers cannot contain a dot; :meth:`from_dict` and
-:meth:`to_dict` translate between the two spellings.
+:meth:`validate` performs the full normalization in a single pass over the
+caller's dict and returns a fresh plain dict: keys are validated inline and
+written into the result as they are encountered, so the caller's original
+key order is reproduced for free and the input dict is never mutated. The
+``"agents.md"`` key needs no special field spelling anymore because the
+result is written straight through as ``result["agents.md"]``.
 
-    from ego_py.llm.models import ConfigModel
+    from ego_py.llm.config import ConfigModel
 
-    config = ConfigModel.from_dict({"file": True, "agents.md": "/repo"})
-    config.to_dict()   # -> {"file": True, "agents.md": "/repo"}
+    config = ConfigModel({"file": True, "agents.md": "/repo"})
+    config.validate()   # -> {"file": True, "agents.md": "/repo"}
+
+:meth:`from_dict` / :meth:`to_dict` are kept as backward-compatible
+aliases for the old two-step chain:
+
+    ConfigModel.from_dict(x).to_dict() == ConfigModel(x).validate()
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 #: Dict keys this schema validates (everything else is str -> str metadata).
 KNOWN_KEYS = ("session_path", "skills", "file", "agents.md", "context_manager")
 
 
-@dataclass
 class ConfigModel:
-    """Dataclass schema for the per-object ``config`` dict.
+    """Schema for the per-object ``config`` dict.
 
-    Fields mirror the known config keys one-to-one (``agents_md`` maps to
-    the ``"agents.md"`` key). ``extra`` collects any unknown str -> str
-    keys so they survive validation unchanged. Build instances with
-    :meth:`from_dict`; :meth:`to_dict` returns the normalized plain dict
-    that BaseLLM stores as ``self.config``.
+    Thin wrapper around the raw input: :meth:`validate` returns the
+    normalized plain dict that BaseLLM stores as ``self.config``. Only
+    keys present in the original input are emitted (original order
+    preserved), so an empty config normalizes to exactly ``{}`` and
+    unknown str -> str keys survive untouched.
+
+    ``from_dict`` / ``to_dict`` are compatibility aliases for the old
+    dataclass-style two-step chain.
     """
 
-    session_path: Optional[str] = None
-    skills: Optional[str] = None
-    file: bool = False
-    agents_md: Optional[str] = None
-    context_manager: Optional[Dict[str, Optional[int]]] = None
-    extra: Dict[str, str] = field(default_factory=dict)
-
-    # Input key order (used by to_dict to reproduce the caller's dict).
-    _order: List[str] = field(default_factory=list, repr=False, compare=False)
+    def __init__(self, config: Optional[Dict[str, Any]] = None) -> None:
+        self._config = config
 
     @classmethod
     def from_dict(cls, config: Optional[Dict[str, Any]]) -> "ConfigModel":
+        """Compatibility alias: build an instance around ``config``.
+
+        Validation still runs eagerly here (as it did before the
+        class-based rewrite), so ``from_dict`` raises on invalid input
+        even when ``to_dict`` is never called; :meth:`validate` is
+        idempotent, so the later ``to_dict`` call re-derives the same
+        normalized dict.
+        """
+        instance = cls(config)
+        instance.validate()
+        return instance
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Compatibility alias for :meth:`validate`."""
+        return self.validate()
+
+    def validate(self) -> Dict[str, Any]:
+        """Validate ``self._config`` and return the normalized plain dict.
+
+        None / {} -> {}. The input must be a dict with str keys; each
+        known key is checked (file bool, session_path str, skills /
+        agents.md string paths, context_manager dict with
+        summarize/max_iteration positive-int-or-None) and unknown str ->
+        str metadata is passed through. Keys are written into the result
+        as they are visited, so the caller's key order is preserved; a
+        fresh dict is returned each call and the input is never mutated.
+        """
+        config = self._config
         if config is None:
-            config = {}
+            return {}
         if not isinstance(config, dict):
             raise TypeError(
                 "config must be a dict of str -> str settings (or None), "
                 f"got {type(config).__name__}"
             )
 
-        session_path: Optional[str] = None
-        skills: Optional[str] = None
-        file: bool = False
-        agents_md: Optional[str] = None
-        context_manager: Optional[Dict[str, Optional[int]]] = None
-        extra: Dict[str, str] = {}
-        order: List[str] = []
-
+        result: Dict[str, Any] = {}
         for key, value in config.items():
             if not isinstance(key, str):
                 raise TypeError(
                     "config must map str keys to str values, got key "
                     f"{key!r}"
                 )
-            order.append(key)
 
             if key == "context_manager":
                 if not isinstance(value, dict):
@@ -112,20 +134,20 @@ class ConfigModel:
                     normalized[cm_key] = cm_value
                 normalized.setdefault("summarize", None)
                 normalized.setdefault("max_iteration", None)
-                context_manager = normalized
+                result[key] = normalized
             elif key == "skills":
-                cls._check_path(value, "skills")
-                skills = value
+                self._check_path(value, "skills")
+                result[key] = value
             elif key == "agents.md":
-                cls._check_path(value, "agents.md")
-                agents_md = value
+                self._check_path(value, "agents.md")
+                result[key] = value
             elif key == "file":
                 if not isinstance(value, bool):
                     raise TypeError(
                         f"config['file'] must be a bool (True/False), "
                         f"got {type(value).__name__}"
                     )
-                file = value
+                result[key] = value
             elif key == "session_path":
                 if not isinstance(value, str):
                     raise TypeError(
@@ -133,7 +155,7 @@ class ConfigModel:
                         f"(config['session_path'] must be a string), "
                         f"got key {key!r} -> value {value!r}"
                     )
-                session_path = value
+                result[key] = value
             else:
                 if not isinstance(value, str):
                     raise TypeError(
@@ -141,17 +163,9 @@ class ConfigModel:
                         "'context_manager', 'skills', 'file' and "
                         f"'agents.md'), got key {key!r} -> value {value!r}"
                     )
-                extra[key] = value
+                result[key] = value
 
-        return cls(
-            session_path=session_path,
-            skills=skills,
-            file=file,
-            agents_md=agents_md,
-            context_manager=context_manager,
-            extra=extra,
-            _order=order,
-        )
+        return result
 
     @staticmethod
     def _check_path(value: Any, key: str) -> None:
@@ -165,29 +179,6 @@ class ConfigModel:
             raise ValueError(
                 f"config[{key!r}] must be a non-empty path when provided"
             )
-
-    def to_dict(self) -> Dict[str, Any]:
-        """Return the normalized plain config dict.
-
-        Only keys present in the original input are emitted (original order
-        preserved), so an empty config normalizes to exactly ``{}`` and
-        unknown str -> str keys survive untouched.
-        """
-        known = {
-            "session_path": self.session_path,
-            "skills": self.skills,
-            "file": self.file,
-            "agents.md": self.agents_md,
-            "context_manager": (
-                dict(self.context_manager)
-                if self.context_manager is not None
-                else None
-            ),
-        }
-        result: Dict[str, Any] = {}
-        for key in self._order:
-            result[key] = known[key] if key in known else self.extra[key]
-        return result
 
 
 __all__ = ["ConfigModel", "KNOWN_KEYS"]

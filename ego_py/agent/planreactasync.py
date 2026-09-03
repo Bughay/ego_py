@@ -13,8 +13,8 @@ Usage: mix with a concrete provider, e.g.
 or via the factory:
 
     from ego_py import EgoAgent
-    agent = EgoAgent(agent="plan-react-async", model="deepseek-v4-flash",
-                     max_tokens=10000, ...)
+    agent = EgoAgent(agent="agent-swarm", model="deepseek-v4-flash",
+                     max_tokens=10000, max_workers=5, ...)
     result = agent.run(task, max_steps=10)
 """
 import contextvars
@@ -27,23 +27,37 @@ from ego_py.agent.react import ReActAgent
 
 class AgentSwarm(PlanReactAgent):
 
-    PLANNER_SYSTEM_PROMPT = (
-        "You are a planning agent. Given the user's task, produce a clear "
-        "step-by-step plan:\n\n"
-        "- Break the task down into concrete, ordered, self-contained steps.\n"
-        "- Each step must be a single, actionable instruction that can be executed on its own.\n"
-        "- Number the steps in the order they must be executed.\n"
-        "- Output only the plan, nothing else.\n"
-        "# KEEP NOTE: \n"
-        "- YOU ARE ASYNCRONOUS PLANNING AGENT MEANING THAT ALL YOUR TASKS WILL BE EXECUTED IN PARALLEL,\n"
-        "- DONOT PLAN TASKS THAT WOULD CONFLICT TOGETHER, YOUR GOAL IS TO SAVE TIME THROUGH CONCURRENCY, MAKE SURE THE EXECUTOR AGENTS DONT CONFLICT EACH OTHER"
-
-         
-  
-        
-
-        
+    PLANNER_SYSTEM_PROMPT_ADDITION = (
+        "\n\n# KEEP NOTE:\n"
+        "- YOU ARE AN ASYNCHRONOUS PLANNING AGENT MEANING THAT ALL YOUR "
+        "TASKS WILL BE EXECUTED IN PARALLEL.\n"
+        "- Create a maximum of {max_workers} workers.\n"
+        "- DO NOT PLAN TASKS THAT WOULD CONFLICT TOGETHER; YOUR GOAL IS TO "
+        "SAVE TIME THROUGH CONCURRENCY, MAKE SURE THE EXECUTOR AGENTS "
+        "DON'T CONFLICT WITH EACH OTHER."
     )
+
+    def __init__(self, model, max_tokens, max_workers: int = 5, **kwargs):
+        self.max_workers = max_workers
+        super().__init__(model=model, max_tokens=max_tokens, **kwargs)
+        self._planner_prompt += self.PLANNER_SYSTEM_PROMPT_ADDITION.format(
+            max_workers=self.max_workers
+        )
+        if self.memory and self.memory[0].get("role") == "system":
+            self.memory[0]["content"] = self._planner_prompt
+
+    @property
+    def max_workers(self) -> int:
+        return self._max_workers
+
+    @max_workers.setter
+    def max_workers(self, value: int):
+        if not isinstance(value, int) or isinstance(value, bool):
+            raise TypeError("max_workers must be an integer")
+        if value <= 0:
+            raise ValueError("max_workers must be positive")
+        self._max_workers = value
+
     def _spawn_react_agent(self):
         """Fresh react instance of the same provider+agent class.
 
@@ -53,6 +67,7 @@ class AgentSwarm(PlanReactAgent):
         return self.__class__(
             model=self.model,
             max_tokens=self.max_tokens,
+            max_workers=self.max_workers,
             instruction=getattr(self, "_instruction", None),
             directory=getattr(self, "_directory", None),
             tool_registry=self.tool_registry,
@@ -78,7 +93,7 @@ class AgentSwarm(PlanReactAgent):
             children.append(self._spawn_react_agent())
 
         # run every step's react loop in its own thread
-        with ThreadPoolExecutor(max_workers=len(plan.execute_steps)) as pool:
+        with ThreadPoolExecutor(max_workers=self.max_workers) as pool:
             futures = []
             for child, step in zip(children, plan.execute_steps):
                 step_ctx = contextvars.copy_context()

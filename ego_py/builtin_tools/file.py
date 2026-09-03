@@ -30,9 +30,19 @@ _IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp"}
 
 
 def validate_directory(directory: str) -> str:
-    """Validate a workspace directory and return its resolved absolute path."""
+    """Validate a workspace directory and return its resolved absolute path.
+
+    The workspace is an anchor: work may only go forward from it, never
+    back up the tree. Any '..' (parent traversal) segment in the input is
+    rejected outright, so the workspace can never be selected through a
+    traversal-looking path.
+    """
     if not isinstance(directory, str) or not directory.strip():
         raise ValueError("directory must be a non-empty string")
+    if ".." in Path(directory).parts:
+        raise ValueError(
+            f"directory must not contain '..' (parent traversal): {directory!r}"
+        )
     root = Path(directory).expanduser().resolve()
     if not root.exists():
         raise ValueError(f"directory does not exist: {root}")
@@ -53,8 +63,19 @@ def build_file_tools(directory: str) -> Dict[str, Callable]:
     # -------------------------- private helpers --------------------------
 
     def _resolve(path: str) -> Path:
-        """Resolve a tool path argument against the workspace root."""
+        """Resolve a tool path argument against the workspace root.
+
+        '..' segments are rejected outright — work may only go forward
+        inside the workspace, never back up the tree. The final resolution
+        must also stay inside the root (this second check catches absolute
+        paths and symlinks that point outside the workspace).
+        """
         p = Path(path)
+        if ".." in p.parts:
+            raise ValueError(
+                f"'..' is not allowed — paths must stay inside the "
+                f"workspace directory: {path!r}"
+            )
         if not p.is_absolute():
             p = root / p
         p = p.resolve()
@@ -164,6 +185,11 @@ def build_file_tools(directory: str) -> Dict[str, Callable]:
     def glob(pattern: str, path: str = ".") -> str:
         """Find files and folders matching a glob pattern (e.g. '**/*.py')
         under the given directory, relative to the workspace root."""
+        if ".." in Path(pattern).parts:
+            return (
+                "Error: '..' is not allowed in glob patterns — searches must "
+                "stay inside the workspace directory"
+            )
         base = _resolve(path)
         if not base.exists():
             return f"Error: path does not exist: {path}"
