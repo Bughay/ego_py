@@ -10,7 +10,7 @@ decorator:
                          classification + extraction into a file there
 
 Every stage's config is a plain dict; BaseLLM validates and normalizes
-each one through the ConfigModel schema from ego_py/llm/config.py (the
+each one through the ConfigModel schema from egoai/llm/config.py (the
 single source of truth for the config schema) at construction time:
 
     self.config = ConfigModel.from_dict(config).to_dict()
@@ -28,10 +28,10 @@ import json
 import os
 import sys
 
-# Make `ego_py` importable when the script is run directly from anywhere.
+# Make `egoai` importable when the script is run directly from anywhere.
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from ego_py import EgoAgent, LLM, WorkflowSession  # noqa: E402
+from egoai import EgoAgent, LLM, WorkflowSession  # noqa: E402
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 WORKSPACE_DIR = os.path.abspath(os.path.join(PROJECT_ROOT, "example_directory"))

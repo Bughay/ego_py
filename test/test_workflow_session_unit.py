@@ -1,4 +1,4 @@
-"""Unit tests for ego_py.mlops.sessions.WorkflowSession.
+"""Unit tests for egoai.mlops.sessions.WorkflowSession.
 
 Runs entirely offline: FakeLLM supplies canned model responses and all
 session files are written into temporary directories, so no network or API
@@ -26,12 +26,12 @@ import tempfile
 import threading
 import unittest
 
-from ego_py.agent.planexecute import PlanExecuteAgent
-from ego_py.agent.planreact import PlanReactAgent
-from ego_py.agent.react import ReActAgent
-from ego_py.llm.base import BaseLLM
-from ego_py.llm.deepseek import DeepseekLLM
-from ego_py.mlops import WorkflowSession
+from egoai.agent.planexecute import PlanExecuteAgent
+from egoai.agent.planreact import PlanReactAgent
+from egoai.agent.react import ReActAgent
+from egoai.llm.base import BaseLLM
+from egoai.llm.deepseek import DeepseekLLM
+from egoai.mlops import WorkflowSession
 from test.fakes import FakeLLM
 
 

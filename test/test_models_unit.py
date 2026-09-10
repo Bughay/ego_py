@@ -1,4 +1,4 @@
-"""Unit tests for ego_py.llm.models — the ConfigModel config schema.
+"""Unit tests for egoai.llm.models — the ConfigModel config schema.
 
 Runs entirely offline. Covers:
 
@@ -20,12 +20,12 @@ import os
 import tempfile
 import unittest
 
-from ego_py.agent.react import ReActAgent
-from ego_py.llm.config import ConfigModel
+from egoai.agent.react import ReActAgent
+from egoai.llm.config import ConfigModel
 from test.fakes import FakeLLM
 
 FILE_TOOL_NAMES = {"ls", "read_file", "write_file", "edit_file",
-                   "delete", "glob", "grep"}
+                   "delete", "glob", "grep", "bash"}
 
 
 class FakeReAct(ReActAgent, FakeLLM):
@@ -113,11 +113,23 @@ class TestValidation(unittest.TestCase):
         with self.assertRaisesRegex(TypeError, "session_path"):
             ConfigModel.from_dict({"session_path": None})
 
-    def test_file_must_be_bool(self):
-        for bad in (1, 0, "yes", None, [True]):
+    def test_file_must_be_bool_or_read_only(self):
+        for bad in (1, 0, None, [True], {"x": 1}):
             with self.subTest(value=bad):
                 with self.assertRaisesRegex(TypeError, "file.*bool"):
                     ConfigModel.from_dict({"file": bad})
+        for bad in ("yes", "read", "read-only ", ""):
+            with self.subTest(value=bad):
+                with self.assertRaisesRegex(ValueError, "file.*read-only"):
+                    ConfigModel.from_dict({"file": bad})
+
+    def test_file_accepts_read_only_string(self):
+        for good in (True, False, "read-only"):
+            with self.subTest(value=good):
+                self.assertEqual(
+                    ConfigModel.from_dict({"file": good}).to_dict(),
+                    {"file": good},
+                )
 
     def test_agents_md_must_be_path_string(self):
         for bad in (1, ["/repo"], {"p": "/repo"}):

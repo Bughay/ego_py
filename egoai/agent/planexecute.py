@@ -1,7 +1,7 @@
 """
 Plan-Execute agent.
 
-Inherits all LLM plumbing from agent_logic.llm.base.BaseLLM and implements the
+Inherits all LLM plumbing from egoai.llm.base.BaseLLM and implements the
 plan-then-execute strategy:
 
     1. plan(task) -> the planner LLM writes a plan, then extract() pulls out
@@ -15,7 +15,8 @@ Passing `directory` (an absolute path) scopes the plan and the execution to
 that workspace: the directory is injected into both prompts. File tools are
 NOT registered automatically — pass them explicitly via `tool_registry`
 (e.g. build_file_tools(directory)) so the executor can read, write, list and
-search files during step execution.
+search files during step execution. `directory` defaults to the current
+working directory when omitted.
 
 Usage: mix with a concrete provider, e.g.
 
@@ -24,9 +25,10 @@ Usage: mix with a concrete provider, e.g.
 """
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional
+import os
 
-from ego_py.builtin_tools.file import validate_directory
-from ego_py.llm.base import BaseLLM
+from egoai.builtin_tools.file import validate_directory
+from egoai.llm.base import BaseLLM
 
 
 @dataclass
@@ -47,7 +49,8 @@ class PlanExecuteAgent(BaseLLM):
         model, max_tokens     required; passed to the provider
         instruction           optional extra instructions appended to both prompts
         directory             optional absolute workspace path (scopes the prompts
-                              to it; no tools are registered automatically)
+                              to it; defaults to the current working directory;
+                              no tools are registered automatically)
         tool_registry         optional dict of tools; pass build_file_tools(directory)
                               yourself if the executor should have file access
 
@@ -98,8 +101,9 @@ class PlanExecuteAgent(BaseLLM):
             raise TypeError("instruction must be a str or None")
         if directory is None:
             directory = getattr(self, "_directory", None)
-        if directory is not None:
-            directory = validate_directory(directory)
+        if directory is None:
+            directory = os.getcwd()
+        directory = validate_directory(directory)
 
         self._instruction = instruction
         self._directory = directory

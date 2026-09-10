@@ -24,9 +24,9 @@ tool calls) of that agent. The goal is full traceability: you can replay each
 exact step of a multi-LLM / multi-agent workflow, with its metadata and full
 memory, in order.
 
-Location: `ego_py/mlops/sessions.py` — exported as
-`from ego_py import WorkflowSession`. Session locations are read from the
-workflow's `Config.session_path` (`ego_py.config`).
+Location: `egoai/mlops/sessions.py` — exported as
+`from egoai import WorkflowSession`. Session locations are read from the
+workflow's `Config.session_path` (`egoai.config`).
 
 ---
 
@@ -52,8 +52,8 @@ saved as one JSON when the function finishes.
 ### 2.1 Decorator (recommended)
 
 ```python
-from ego_py.config import Config
-from ego_py import WorkflowSession
+from egoai.config import Config
+from egoai import WorkflowSession
 
 config = Config(session_path="/existing/sessions/dir")
 
@@ -116,13 +116,13 @@ sessions; `main.py` imports and runs them.
 ### 2.4 Configuration — the workflow's `Config`
 
 Session JSONs go to the directory given by the workflow's
-`Config.session_path` (`ego_py/config`, exported as
-`from ego_py.config import Config`). `Config` holds exactly two path
+`Config.session_path` (`egoai/config`, exported as
+`from egoai.config import Config`). `Config` holds exactly two path
 attributes, both `None` by default: `session_path` and `agents_path`
 (reserved for the agents' workspace — keep it `None` for now).
 
 ```python
-from ego_py.config import Config
+from egoai.config import Config
 
 config = Config()                                  # both paths None -> no saving
 config.session_path = "/existing/sessions/dir"     # enable saving there
@@ -152,7 +152,7 @@ class WorkflowSession:
 | Member | Description |
 | --- | --- |
 | `name` | Workflow name used in the file name. Sanitized to `[A-Za-z0-9_-]`; default `"workflow"`. |
-| `config` | `ego_py.config.Config` instance. Its `session_path` decides where (and whether) session JSONs are saved: the directory must exist, otherwise nothing is saved at all. A `None` config, or `None` session_path, disables saving. Re-read on every `__enter__`, so mutations before a call take effect. |
+| `config` | `egoai.config.Config` instance. Its `session_path` decides where (and whether) session JSONs are saved: the directory must exist, otherwise nothing is saved at all. A `None` config, or `None` session_path, disables saving. Re-read on every `__enter__`, so mutations before a call take effect. |
 | `session_id` | Random UUID identifying this run (also embedded in every step's metadata). |
 | `steps` | Ordered dict of the numbered records (`{"1": ..., "2": ...}`). |
 | `path` | `Path` of the written JSON (set by the first `save()`). |

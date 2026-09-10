@@ -11,7 +11,8 @@ The class only adds run(), the single function that drives the whole loop;
 everything else is inherited from PlanExecuteAgent and ReActAgent.
 
 The `directory` parameter flows through both parents: the planner/executor
-prompts are scoped to the workspace. File tools are not auto-registered —
+prompts are scoped to the workspace. `directory` defaults to the current
+working directory when omitted. File tools are not auto-registered —
 pass them explicitly via `tool_registry` (e.g. build_file_tools(directory))
 if the execution steps must operate on files.
 
@@ -28,8 +29,8 @@ Usage: mix with a concrete provider, e.g.
 """
 from typing import Any, Dict, List
 
-from ego_py.agent.planexecute import PlanExecuteAgent
-from ego_py.agent.react import ReActAgent
+from egoai.agent.planexecute import PlanExecuteAgent
+from egoai.agent.react import ReActAgent
 
 
 class PlanReactAgent(PlanExecuteAgent, ReActAgent):

@@ -23,7 +23,7 @@ JSON in that directory (one session file per workflow run):
 
 Run them via main.py, or directly:
 
-    from system import workflow_agents
+    from examples import workflow_agents
     workflow_agents()
 
 To add a new session: write another function here, decorate it with
@@ -33,9 +33,9 @@ EgoAgent(...) inside it config={"session_path": <existing sessions dir>}.
 import json
 import os
 
-from ego_py import EgoAgent, LLM, WorkflowSession
-from ego_py.builtin_tools.file import build_file_tools
-from ego_py.builtin_tools.math import build_math_tools
+from egoai import EgoAgent, LLM, WorkflowSession
+from egoai.builtin_tools.file import build_file_tools
+from egoai.builtin_tools.math import build_math_tools
 
 # Workspace the agents may work in (resolved relative to this file).
 WORKSPACE_DIR = os.path.abspath(
@@ -45,7 +45,9 @@ WORKSPACE_DIR = os.path.abspath(
 # Existing sessions directory: every workflow object's config.session_path
 # must point at an existing directory (None / non-existent -> RuntimeError
 # at record time). Session JSONs land here.
-SESSION_DIR = "/home/lordmark1/Desktop/production_code/ego_assistant_python/here"
+SESSION_DIR = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "sessions")
+)
 
 # The workflows only accept EXISTING directories (nothing is auto-created by
 # WorkflowSession or the file tools), so make both dirs available up front.

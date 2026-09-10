@@ -41,7 +41,7 @@ at all produces no file and no error.
 
 Usage (decorator — recommended):
 
-    from ego_py import EgoAgent, WorkflowSession
+    from egoai import EgoAgent, WorkflowSession
 
     SESSION_DIR = "/existing/sessions/dir"
 
@@ -201,7 +201,7 @@ def _discover_provider_classes() -> List[type]:
     Patching those base classes covers every instance, including combined
     classes built later by the EgoAgent factory.
     """
-    from ego_py.llm.base import BaseLLM
+    from egoai.llm.base import BaseLLM
 
     found: List[type] = []
     seen = set()
@@ -386,11 +386,11 @@ class WorkflowSession:
         # lazily from the first recorded object's config (see
         # _ensure_enabled). _enabled stays False until that happens, so an
         # empty workflow records nothing and writes no file.
-        # Lazy imports avoid circular imports with ego_py.__init__.
-        from ego_py.agent.planexecute import PlanExecuteAgent
-        from ego_py.agent.planreact import PlanReactAgent
-        from ego_py.agent.react import ReActAgent
-        from ego_py.llm.base import BaseLLM
+        # Lazy imports avoid circular imports with egoai.__init__.
+        from egoai.agent.planexecute import PlanExecuteAgent
+        from egoai.agent.planreact import PlanReactAgent
+        from egoai.agent.react import ReActAgent
+        from egoai.llm.base import BaseLLM
 
         # Order matters: plan-react is also a plan-execute/ReAct instance.
         self._agent_type_map = [

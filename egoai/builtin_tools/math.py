@@ -5,7 +5,7 @@ These tools let an agent do arithmetic without doing the math itself in its
 head. Like the file tools, they are meant to be placed inside the LLM
 tool_registry explicitly:
 
-    from agent_logic.agent.builtin_tools.math import build_math_tools
+    from egoai.builtin_tools.math import build_math_tools
 
     tool_registry = build_math_tools()
 

@@ -14,7 +14,7 @@ deterministically, without touching the network or needing real API keys:
   FakeToolCall: mirrors of the OpenAI SDK response objects used by
                 DeepseekLLM.one_shot / GrokLLM.one_shot.
 """
-from ego_py.llm.base import BaseLLM
+from egoai.llm.base import BaseLLM
 
 
 class StrictLLM(BaseLLM):
@@ -38,7 +38,9 @@ class StrictLLM(BaseLLM):
         return {}
 
     def one_shot(self):
-        return {"reasoning": None, "content": "", "tool_calls": []}
+        result = {"reasoning": None, "content": "", "tool_calls": []}
+        self._print_output(result)
+        return result
 
 
 class FakeLLM(BaseLLM):
@@ -87,6 +89,7 @@ class FakeLLM(BaseLLM):
         # Mirror the real providers: append the assistant turn to memory.
         self.memory.append({"role": "assistant", "content": canned.get("content")})
         self._tokens_used += self.tokens_per_call
+        self._print_output(canned)
         return canned
 
 

@@ -1,6 +1,6 @@
 """LLM factory — create a provider object just by model name.
 
-    from agent_logic import LLM
+    from egoai import LLM
 
     llm = LLM(model="deepseek-v4-flash", system_prompt=..., user_prompt=...)
     llm = LLM(model="grok-4.6", system_prompt=..., user_prompt=...)
@@ -23,20 +23,22 @@ All other parameters pass straight through to the provider class:
     config                               dict of str -> str settings attached to the
                                          instance (default {}); WorkflowSession reads
                                          config["session_path"] to decide where session
-                                         JSONs are saved (see ego_py/mlops). May also
+                                         JSONs are saved (see egoai/mlops). May also
                                          contain config["context_manager"] =
                                          {"summarize": int|None, "max_iteration": int|None}
                                          for automatic context summarization/trimming,
                                          config["skills"] (directory of .md skill files),
-                                         config["file"] (bool; True auto-loads the built-in
-                                         file tools for the workspace directory) and
+                                         config["file"] (bool or "read-only"; True
+                                         auto-loads the full built-in file tools for
+                                         the workspace directory, "read-only" loads
+                                         only ls/read_file/glob/grep) and
                                          config["agents.md"] (directory scanned recursively;
                                          every AGENTS.md file's contents are injected into
                                          the system prompt). Validated and normalized by
-                                         ConfigModel (ego_py/llm/config.py).
+                                         ConfigModel (egoai/llm/config.py).
 """
-from ego_py.llm.deepseek import DeepseekLLM
-from ego_py.llm.grok import GrokLLM
+from egoai.llm.deepseek import DeepseekLLM
+from egoai.llm.grok import GrokLLM
 
 
 class LLM:

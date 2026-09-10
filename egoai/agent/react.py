@@ -2,7 +2,7 @@
 ReAct (Reason-Act-Observe) agent.
 
 Inherits all LLM plumbing (memory, tool registry, one_shot) from
-agent_logic.llm.base.BaseLLM and adds the classic ReAct loop on top of it:
+egoai.llm.base.BaseLLM and adds the classic ReAct loop on top of it:
 
     onestep() -> one Reason -> Act -> Observe cycle
     run()     -> starts a fresh conversation for a task, then repeats
@@ -14,10 +14,11 @@ The agent system prompt is REACT_SYSTEM_PROMPT + the injected instruction.
 Passing `directory` (an absolute path) only scopes the system prompt to that
 workspace — it does NOT register any tools. File tools must be passed
 explicitly via `tool_registry`, e.g. with build_file_tools(directory):
+`directory` defaults to the current working directory when omitted.
 
 Usage: mix with a concrete provider, e.g.
 
-    from agent_logic.agent.builtin_tools.file import build_file_tools
+    from egoai.builtin_tools.file import build_file_tools
 
     class GrokReAct(ReActAgent, GrokLLM):
         pass
@@ -29,9 +30,10 @@ Usage: mix with a concrete provider, e.g.
     result = agent.run("Find the config file and tell me what it contains.")
 """
 from typing import Any, Callable, Dict, List, Optional
+import os
 
-from ego_py.builtin_tools.file import validate_directory
-from ego_py.llm.base import BaseLLM
+from egoai.builtin_tools.file import validate_directory
+from egoai.llm.base import BaseLLM
 
 
 class ReActAgent(BaseLLM):
@@ -46,7 +48,8 @@ class ReActAgent(BaseLLM):
         model, max_tokens     required; passed to the provider
         instruction           optional extra instructions appended to the system prompt
         directory             optional absolute workspace path (scopes the system
-                              prompt to it; no tools are registered automatically)
+                              prompt to it; defaults to the current working
+                              directory; no tools are registered automatically)
         tool_registry         optional dict of tools; pass build_file_tools(directory)
                               yourself if the agent should have file access
         memory                optional custom starting conversation
@@ -90,8 +93,9 @@ class ReActAgent(BaseLLM):
             raise TypeError("instruction must be a str or None")
         if directory is None:
             directory = getattr(self, "_directory", None)
-        if directory is not None:
-            directory = validate_directory(directory)
+        if directory is None:
+            directory = os.getcwd()
+        directory = validate_directory(directory)
         self._directory = directory
 
         injected = f"\n\nAdditional instructions:\n{instruction}" if instruction else ""

@@ -1,9 +1,8 @@
 import os
 import json
 from typing import List, Dict, Optional, Any, Callable
-from openai import OpenAI
-from ego_py.llm.base import BaseLLM
-import httpx2
+from egoai.provider_api import EgoOpenAI
+from egoai.llm.base import BaseLLM
 
 class GrokLLM(BaseLLM):
     """
@@ -95,20 +94,12 @@ class GrokLLM(BaseLLM):
             )
         return key
 
-        # --- CLI fallback (uncomment to prompt for the key instead) --------
-        # if not key:
-        #     print("XAI_API_KEY not found in environment.")
-        #     key = input("Enter your xAI API key: ").strip()
-        #     if not key:
-        #         raise ValueError("API key cannot be empty.")
-        #     os.environ["XAI_API_KEY"] = key
-
     def _create_client(self):
         api_key = self._get_api_key()
-        return OpenAI(
+        return EgoOpenAI(
             api_key=api_key,
             base_url="https://api.x.ai/v1",
-            timeout=httpx2.Timeout(600.0),
+            timeout=600.0,
         )
 
     def _build_payload(self) -> Dict[str, Any]:
@@ -183,4 +174,5 @@ class GrokLLM(BaseLLM):
             "content": message.content,
             "tool_calls": tool_calls,
         }
+        self._print_output(result)
         return result

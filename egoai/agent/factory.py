@@ -1,8 +1,8 @@
 """Agent factory — one class that creates every kind of agent.
 
-    from agent_logic import EgoAgent
+    from egoai import EgoAgent
 
-    from agent_logic.agent.builtin_tools.file import build_file_tools
+    from egoai.builtin_tools.file import build_file_tools
 
     agent = EgoAgent(agent="react", model="deepseek-v4-flash",
                      max_tokens=10000, directory="/path/to/workspace",
@@ -26,7 +26,8 @@ Agent-specific parameters:
     max_tokens            required; response size cap
     instruction           optional extra instructions appended to the prompts
     directory             optional absolute workspace path (scopes the
-                          agent prompts to that workspace)
+                          agent prompts to that workspace); defaults to
+                          the current working directory
     tool_registry         optional dict of tools; nothing is auto-added —
                           pass build_file_tools(directory) yourself to give
                           the agent file access
@@ -44,24 +45,26 @@ Parameters forwarded straight through to the provider (DeepseekLLM / GrokLLM):
     config                dict of str -> str settings attached to the
                           instance (default {}); WorkflowSession reads
                           config["session_path"] to decide where session
-                          JSONs are saved (see ego_py/mlops). May also
+                          JSONs are saved (see egoai/mlops). May also
                           contain config["context_manager"] =
                           {"summarize": int|None, "max_iteration": int|None}
                           for automatic context summarization/trimming,
                           config["skills"] (directory of .md skill files),
-                          config["file"] (bool; True auto-loads the built-in
-                          file tools for the workspace directory) and
+                          config["file"] (bool or "read-only"; True
+                          auto-loads the full built-in file tools for the
+                          workspace directory, "read-only" loads only
+                          ls/read_file/glob/grep) and
                           config["agents.md"] (directory scanned recursively;
                           every AGENTS.md file's contents are injected into
                           the system prompt). Validated and normalized by
-                          ConfigModel (ego_py/llm/config.py).
+                          ConfigModel (egoai/llm/config.py).
 """
-from ego_py.agent.planexecute import PlanExecuteAgent
-from ego_py.agent.planreact import PlanReactAgent
-from ego_py.agent.planreactasync import AgentSwarm
-from ego_py.agent.react import ReActAgent
-from ego_py.llm.deepseek import DeepseekLLM
-from ego_py.llm.grok import GrokLLM
+from egoai.agent.planexecute import PlanExecuteAgent
+from egoai.agent.planreact import PlanReactAgent
+from egoai.agent.planreactasync import AgentSwarm
+from egoai.agent.react import ReActAgent
+from egoai.llm.deepseek import DeepseekLLM
+from egoai.llm.grok import GrokLLM
 
 
 class EgoAgent:

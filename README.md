@@ -1,4 +1,4 @@
-# ego_py
+# egoai
 
 A tiny, workflow-first Python framework that abstracts away LLMs and agents so you can focus on **what you're building**, not on API plumbing.
 
@@ -7,7 +7,7 @@ A tiny, workflow-first Python framework that abstracts away LLMs and agents so y
 Most LLM libraries make you think about providers, payloads, and message formats. This one doesn't. Everything from a raw model call to a tool-using agent or a whole multi-agent pipeline is just an object you talk to:
 
 ```python
-from ego_py import EgoAgent, LLM
+from egoai import EgoAgent, LLM
 
 llm = LLM(model="deepseek-v4-flash",
           system_prompt="You are a helpful assistant.",
@@ -30,7 +30,7 @@ You describe the problem; the object turns it into a solution. `EgoAgent` picks 
 The library treats a **workflow**, a sequence of LLM calls and agent steps that accomplish one real task, as the primary unit. You write a plain Python function, decorate it, and the entire run (every call, every tool execution, every conversation) is recorded automatically as a numbered session JSON:
 
 ```python
-from ego_py import EgoAgent, LLM, WorkflowSession
+from egoai import EgoAgent, LLM, WorkflowSession
 
 @WorkflowSession.capture("research_workflow")
 def research():
@@ -56,7 +56,7 @@ There are exactly two entry points: `LLM` and `EgoAgent`. Both are factories: th
 ### `LLM`: the raw model call, all parameters
 
 ```python
-from ego_py import LLM
+from egoai import LLM
 
 llm = LLM(
     # provider
@@ -127,8 +127,8 @@ llm.summarize(long_document_text, max_tokens=500)     # -> short summary string
 ### `EgoAgent`: one factory, three strategies, all parameters
 
 ```python
-from ego_py import EgoAgent
-from ego_py.builtin_tools.file import build_file_tools
+from egoai import EgoAgent
+from egoai.builtin_tools.file import build_file_tools
 
 agent = EgoAgent(
     # strategy + provider
@@ -220,6 +220,7 @@ Every object carries a single plain `config` dict. No subclassing, no builders: 
 config = {
     "session_path": "/existing/sessions/dir",  # where sessions are recorded
     "file": True,                              # auto-load file tools (ls, read, write, edit...)
+    # "file": "read-only",                      # or: only ls, read_file, glob, grep
     "skills": "/path/to/skills",               # directory of .md skill files
     "agents.md": "/repo",                      # inject every AGENTS.md found under here into the prompt
     "context_manager": {
@@ -363,7 +364,7 @@ answer = planner.run("Plan the build from the conversation above.")
 Then post the answer to a react agent with the instruction "create this website", memory through `[]` only, again:
 
 ```python
-from ego_py.builtin_tools.file import build_file_tools
+from egoai.builtin_tools.file import build_file_tools
 
 builder = EgoAgent(agent="react", model="deepseek-v4-flash",
                    max_tokens=10000, instruction="Create this website.",

@@ -16,7 +16,7 @@ Covered:
 import os
 import unittest
 
-from ego_py import DeepseekLLM, GrokLLM
+from egoai import DeepseekLLM, GrokLLM
 from test.fakes import FakeClient, FakeMessage, FakeToolCall, FakeUsage
 
 

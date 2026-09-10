@@ -3,11 +3,11 @@
 Import a workflow and call it — the WorkflowSession decorator records the
 run into the directory given by each recorded object's config dict:
 
-    from system import workflow_agents, workflow_plain_react
+    from examples import workflow_agents, workflow_plain_react
 
 Every LLM(...) / EgoAgent(...) inside a workflow carries
 config={"session_path": <existing sessions dir>}; the first recorded object
-decides the directory and every later one must agree (see ego_py/mlops).
+decides the directory and every later one must agree (see egoai/mlops).
 """
 
 from examples.test import (

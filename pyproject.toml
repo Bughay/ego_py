@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "egoai"
+description = "Workflow-first framework that abstracts LLMs and agents behind a tiny object API (LLM, EgoAgent, WorkflowSession)."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+authors = [{ name = "Mark Schrammel", email = "markschrammel@yandex.ru" }] 
+keywords = ["llm", "agent", "deepseek", "grok", "mlops", "workflow"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = []
+dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://github.com/Bughay/ego_py"
+
+
+[tool.setuptools]
+# Ship ONLY the egoai library. main.py, examples/ and test/ are dev
+# harnesses and must never end up in the published wheel/sdist.
+packages = [
+    "egoai",
+    "egoai.agent",
+    "egoai.builtin_tools",
+    "egoai.llm",
+    "egoai.mlops",
+    "egoai.provider_api",
+]
+
+[tool.setuptools.dynamic]
+version = { attr = "egoai.__version__" }

@@ -1,4 +1,4 @@
-"""Unit tests for agent_logic.llm.base.BaseLLM — the shared plumbing.
+"""Unit tests for egoai.llm.base.BaseLLM — the shared plumbing.
 
 Runs entirely offline: FakeLLM supplies canned model responses so we can
 test every behaviour of base.py deterministically:
@@ -22,7 +22,7 @@ import io
 import json
 import unittest
 
-from ego_py.llm.base import BaseLLM
+from egoai.llm.base import BaseLLM
 from test.fakes import FakeLLM, StrictLLM
 
 

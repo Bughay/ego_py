@@ -5,8 +5,12 @@ import inspect
 from abc import ABC, abstractmethod
 from typing import List, Dict, Optional, Any, Callable
 
-from ego_py.builtin_tools.file import build_file_tools, validate_directory
-from ego_py.llm.config import ConfigModel
+from egoai.builtin_tools.file import (
+    build_file_tools,
+    build_read_only_file_tools,
+    validate_directory,
+)
+from egoai.llm.config import ConfigModel
 
 class BaseLLM(ABC):
     """
@@ -29,21 +33,23 @@ class BaseLLM(ABC):
 
     Every LLM-based object (providers, agents, combined factory classes)
     also carries a `config` dict validated and normalized by ConfigModel
-    (ego_py/llm/models.py) — the single source of truth for its schema. It
+    (egoai/llm/models.py) — the single source of truth for its schema. It
     defaults to {} and is stored as a private copy. Recognized keys:
     config["session_path"] (session JSON directory, read by WorkflowSession),
     config["skills"] (directory of .md skill files whose frontmatter is
     discovered at init time, stored on skills_metadata, advertised in the
     system prompt and loadable via the `use_skill` tool), config["file"]
-    (bool; True auto-loads build_file_tools() for the workspace directory
-    into tool_registry + the tools schema), config["agents.md"] (directory
+    (bool or "read-only"; True auto-loads build_file_tools() for the
+    workspace directory into tool_registry + the tools schema,
+    "read-only" auto-loads only the read-only subset ls/read_file/glob/
+    grep), config["agents.md"] (directory
     scanned recursively; the contents of every AGENTS.md file found are
     injected into the system prompt) and config["context_manager"]
     ({"summarize": int|None, "max_iteration": int|None} for automatic
     context summarization/trimming). Unknown keys must remain str -> str.
 
     To create an object by model name, use the LLM factory in llm.py:
-        from agent_logic import LLM
+        from egoai import LLM
         llm = LLM(model="deepseek-v4-flash", ...)
     """
 
@@ -94,7 +100,7 @@ class BaseLLM(ABC):
         self.tool_choice = tool_choice
 
         # Validate + normalize the raw config through the shared schema
-        # (ConfigModel in ego_py/llm/config.py). The result is a private
+        # (ConfigModel in egoai/llm/config.py). The result is a private
         # plain-dict copy, so later mutations of the caller's dict cannot
         # leak in; absent keys stay absent and defaults are applied lazily
         # via config.get() below.
@@ -124,10 +130,11 @@ class BaseLLM(ABC):
         if agents_path is not None:
             self._agents_prompt = self._discover_agents_md(agents_path)
 
-        # File tools: when config["file"] is True, load build_file_tools()
-        # for the workspace directory into tool_registry + the tools schema
-        # (same way the use_skill tool is auto-loaded), so every one_shot()
-        # call carries file access without a hand-built registry.
+        # File tools: when config["file"] is True or "read-only", load the
+        # matching file tool set for the workspace directory into
+        # tool_registry + the tools schema (same way the use_skill tool is
+        # auto-loaded), so every one_shot() call carries file access
+        # without a hand-built registry.
         if self.config.get("file"):
             self._load_file_tools()
 
@@ -526,26 +533,31 @@ class BaseLLM(ABC):
         return "\n\n" + "\n\n".join(blocks)
 
     def _load_file_tools(self) -> None:
-        """Load build_file_tools() for the workspace directory into this
+        """Load the file tools for the workspace directory into this
         instance's tool set (tool_registry + tools schema).
 
-        Called automatically by __init__ when config["file"] is True. The
-        workspace comes from the `directory` constructor argument, which
-        agent classes store as self._directory before super().__init__();
-        file=True without a directory is a configuration error. Existing
-        tools are kept: same-named registry entries are overridden by the
-        file tools and their schemas are deduped by function name (the same
-        merge pattern _create_skills_tool uses).
+        Called automatically by __init__ when config["file"] is True or
+        "read-only". The workspace comes from the `directory` constructor
+        argument, which agent classes store as self._directory before
+        super().__init__(); file=True without a directory is a
+        configuration error. config["file"] = "read-only" loads only the
+        read-only subset (ls, read_file, glob, grep) — no write/delete/
+        bash. Existing tools are kept: same-named registry entries are
+        overridden by the file tools and their schemas are deduped by
+        function name (the same merge pattern _create_skills_tool uses).
         """
         directory = getattr(self, "_directory", None)
         if not directory:
             raise ValueError(
-                "config['file'] is True but no workspace directory is "
-                "available; pass directory=<workspace> to the agent. Raw "
-                "LLM objects have no directory and cannot auto-load file "
-                "tools."
+                "config['file'] is set (True or 'read-only') but no "
+                "workspace directory is available; pass "
+                "directory=<workspace> to the agent. Raw LLM objects have "
+                "no directory and cannot auto-load file tools."
             )
-        file_tools = build_file_tools(directory)
+        if self.config.get("file") == "read-only":
+            file_tools = build_read_only_file_tools(directory)
+        else:
+            file_tools = build_file_tools(directory)
 
         if self.tool_registry is None:
             self.tool_registry = {}
@@ -703,6 +715,57 @@ class BaseLLM(ABC):
             f"{k}={json.dumps(v, ensure_ascii=False)}"
             for k, v in args.items()
         )
+
+    def _format_output(self, result: Dict[str, Any]) -> str:
+        """Render one one_shot() result as a clean, readable text block.
+
+        Used by _print_output() when config["print_output"] is on. Only
+        non-empty sections are emitted: [Reasoning], [Content] and
+        [Tool calls] (one line per call, arguments rendered through
+        _format_tool_arguments). A response where all three are empty
+        still renders the header plus an "(empty response)" line.
+        """
+        reasoning = result.get("reasoning")
+        content = result.get("content")
+        tool_calls = result.get("tool_calls") or []
+
+        lines = [f"=== {self.__class__.__name__} output ==="]
+        sections = 0
+
+        if reasoning is not None and str(reasoning).strip():
+            lines += ["", "[Reasoning]", str(reasoning).strip()]
+            sections += 1
+
+        if content is not None and str(content).strip():
+            lines += ["", "[Content]", str(content).strip()]
+            sections += 1
+
+        if tool_calls:
+            lines += ["", "[Tool calls]"]
+            for tool_call in tool_calls:
+                name = tool_call.get("name") or tool_call.get("id") or "?"
+                args = self._format_tool_arguments(tool_call.get("arguments"))
+                lines.append(f"  -> {name}({args})")
+            sections += 1
+
+        if sections == 0:
+            lines += ["", "(empty response)"]
+
+        return "\n".join(lines)
+
+    def _print_output(self, result: Dict[str, Any]) -> None:
+        """Pretty-print one one_shot() result when config["print_output"] is on.
+
+        Off by default (absent / False). Internal calls made by
+        extract() / classify() / summarize() and automatic context
+        management set _managing_context, so their synthetic LLM output is
+        never printed.
+        """
+        if not self.config.get("print_output"):
+            return
+        if self._managing_context:
+            return
+        print(self._format_output(result), flush=True)
 
     # ---------- abstract helpers (must be implemented by subclasses) ----------
     @abstractmethod

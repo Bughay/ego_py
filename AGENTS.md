@@ -79,7 +79,7 @@ You must implement the following 4 methods. The rest is handled automatically.
 
 Method	Purpose & Requirements
 _get_api_key(self) -> str	Retrieve the API key. Check os.environ for the specific variable name (e.g., XAI_API_KEY). If missing, prompt the user for input and save it to the environment. Return the key as a string.
-_create_client(self)	Instantiate the provider's HTTP client (e.g., OpenAI(api_key=..., base_url=...) or a custom requests session). Returns the client object (stored as self._client).
+_create_client(self)	Instantiate the provider's HTTP client — the bundled stdlib-only curl-style client EgoOpenAI(api_key=..., base_url=..., timeout=...) (egoai/provider_api/ego_openai.py), or a custom requests session. Returns the client object (stored as self._client).
 _build_payload(self) -> dict	Build the exact request dictionary the API expects. Start with the common fields (model, messages, max_tokens, temperature) and conditionally add provider-specific fields (e.g., reasoning_effort for DeepSeek, top_p for Anthropic).
 one_shot(self) -> dict	The core execution logic. Call self._build_payload(), send the request via self._client, parse the response. Crucial: Append the assistant's message (including tool_calls if present) to self.memory before returning. Return a standardized dictionary: {"reasoning": str/None, "content": str, "tool_calls": list}.
 Important: If the new provider has unique parameters (e.g., top_k), define them as standard properties with getters/setters inside the subclass, then include them in _build_payload.
@@ -91,10 +91,11 @@ Define your Python functions in a separate module (e.g., tools.py) or use the bu
 
 Pass a tool_registry dictionary mapping string names to the function objects into the constructor.
 
-Nothing is registered automatically: passing `directory` only scopes the agent prompts to that workspace. If you want file access, add the built-in file tools yourself.
+Nothing is registered automatically: passing `directory` only scopes the agent prompts to that workspace (it defaults to the current working directory when omitted). If you want file access, add the built-in file tools yourself.
 
 Built-in tools live in agent_logic/agent/builtin_tools/:
-- file.py: build_file_tools(directory) -> ls, read_file, write_file, edit_file, delete, glob, grep
+- file.py: build_file_tools(directory) -> ls, read_file, write_file, edit_file, delete, glob, grep, bash
+- file.py: build_read_only_file_tools(directory) -> ls, read_file, glob, grep (no write/delete/bash)
 - math.py: build_math_tools() -> add, subtract, multiply, divide
 
 The framework automatically generates the JSON schemas and handles execution via _execute_tool_calls.
@@ -189,7 +190,7 @@ Don't override inherited methods unless absolutely necessary. Methods like _exec
 Always call super().__init__(...) in the subclass's __init__ before setting provider-specific attributes.
 
 9. MLOps Sessions (WorkflowSession)
-The MLOps layer (ego_py/mlops) records complete workflows into session logs — one numbered JSON per wrapped workflow. Full documentation: ego_py/mlops/sessions.py.
+The MLOps layer (egoai/mlops) records complete workflows into session logs — one numbered JSON per wrapped workflow. Full documentation: egoai/mlops/sessions.py.
 
 `WorkflowSession` itself takes NO Config. Instead, every LLM-based object (LLM(...), EgoAgent(...), providers, agents — all inherit it from BaseLLM) carries its own plain `config` dict (str -> str by default, plus the optional nested `config["context_manager"]` dict). The session directory is read from each recorded object's `config["session_path"]` at the moment its run()/one_shot()/tool call fires:
 
@@ -198,7 +199,7 @@ The MLOps layer (ego_py/mlops) records complete workflows into session logs — 
 - every later recorded object in the same workflow must resolve to the SAME directory (one session = one directory), otherwise RuntimeError.
 
 ```python
-from ego_py import EgoAgent, WorkflowSession
+from egoai import EgoAgent, WorkflowSession
 
 SESSION_DIR = "/existing/sessions/dir"
 
@@ -244,21 +245,25 @@ config={
 ### config["file"] and config["agents.md"]
 
 Two more recognized config keys, validated by `ConfigModel` in
-`ego_py/llm/config.py` (the single source of truth for the config schema):
+`egoai/llm/config.py` (the single source of truth for the config schema):
 
 ```python
 config = {
     "session_path": SESSION_DIR,
-    "file": True,                     # bool, default False
+    "file": True,                     # bool | "read-only", default False
     "agents.md": "/path/to/context",  # str | None
 }
 ```
 
-- `file` (bool): when `True`, `build_file_tools(<workspace directory>)` is
-  loaded automatically into `tool_registry` + the tools schema (the same way
-  the `use_skill` tool is auto-loaded for skills). The workspace comes from
-  the agent's `directory=` parameter; a raw `LLM(...)` object (which has no
-  directory) raises `ValueError`. When `False` (the default) nothing changes.
+- `file` (bool | str): when `True`, `build_file_tools(<workspace directory>)`
+  is loaded automatically into `tool_registry` + the tools schema (the same way
+  the `use_skill` tool is auto-loaded for skills). When `"read-only"`,
+  `build_read_only_file_tools(<workspace directory>)` is loaded instead — only
+  `ls`, `read_file`, `glob` and `grep`; the agent has no way to write, edit,
+  delete or run shell commands. The workspace comes from the agent's
+  `directory=` parameter (which defaults to the current working directory); a
+  raw `LLM(...)` object (which has no directory) raises `ValueError`. When
+  `False` (the default) nothing changes.
 - `agents.md` (str): a directory scanned **recursively**; the contents of
   every file named exactly `AGENTS.md` found under it are concatenated and
   injected into the system prompt (agents keep the block across run()/plan()

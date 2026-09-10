@@ -5,7 +5,7 @@ fires while an agent runs, using a FakeLLM-powered ReAct agent.
 """
 import unittest
 
-from ego_py.agent.react import ReActAgent
+from egoai.agent.react import ReActAgent
 from test.fakes import FakeLLM
 
 

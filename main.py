@@ -38,6 +38,7 @@ from examples import (
 def main():
     load_dotenv()
     workflow_agents()
+    workflow_llm_features(),
 
 
 if __name__ == "__main__":

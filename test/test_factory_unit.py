@@ -12,14 +12,14 @@ import os
 import tempfile
 import unittest
 
-from ego_py import EgoAgent, LLM
-from ego_py.builtin_tools.file import build_file_tools
-from ego_py.builtin_tools.math import build_math_tools
-from ego_py.agent.planexecute import PlanExecuteAgent
-from ego_py.agent.planreact import PlanReactAgent
-from ego_py.agent.react import ReActAgent
-from ego_py.llm.deepseek import DeepseekLLM
-from ego_py.llm.grok import GrokLLM
+from egoai import EgoAgent, LLM
+from egoai.builtin_tools.file import build_file_tools
+from egoai.builtin_tools.math import build_math_tools
+from egoai.agent.planexecute import PlanExecuteAgent
+from egoai.agent.planreact import PlanReactAgent
+from egoai.agent.react import ReActAgent
+from egoai.llm.deepseek import DeepseekLLM
+from egoai.llm.grok import GrokLLM
 
 
 def _set_keys():
@@ -158,7 +158,7 @@ class TestEgoAgentFactory(unittest.TestCase):
             self.assertIsNone(agent.tools)
 
     def test_explicit_file_and_math_tools_registered(self):
-        """Passing build_file_tools + build_math_tools by hand registers all 11."""
+        """Passing build_file_tools + build_math_tools by hand registers all 12."""
         with tempfile.TemporaryDirectory() as tmp:
             registry = {**build_math_tools(), **build_file_tools(tmp)}
             agent = EgoAgent(agent="react", model="deepseek-v4-flash",
@@ -168,9 +168,9 @@ class TestEgoAgentFactory(unittest.TestCase):
                 set(agent.tool_registry),
                 {"add", "subtract", "multiply", "divide",
                  "ls", "read_file", "write_file", "edit_file",
-                 "delete", "glob", "grep"},
+                 "delete", "glob", "grep", "bash"},
             )
-            self.assertEqual(len(agent.tools), 11)
+            self.assertEqual(len(agent.tools), 12)
 
     def test_math_tools_execute(self):
         registry = build_math_tools()

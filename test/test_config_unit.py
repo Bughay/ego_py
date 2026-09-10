@@ -1,7 +1,7 @@
 """Unit tests for the per-object config dict contract.
 
-The legacy ``ego_py.config.Config`` class is gone: the config schema now
-lives in ``ego_py/llm/config.py`` as the ``ConfigModel`` dataclass (covered
+The legacy ``egoai.config.Config`` class is gone: the config schema now
+lives in ``egoai/llm/config.py`` as the ``ConfigModel`` dataclass (covered
 by test/test_config_model_unit.py), and every LLM-based object carries the
 normalized plain ``config`` dict.
 
@@ -19,7 +19,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from ego_py.mlops import WorkflowSession
+from egoai.mlops import WorkflowSession
 from test.fakes import FakeLLM
 
 

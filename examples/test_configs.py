@@ -6,7 +6,7 @@ directory is read from each object's config["session_path"] at record time
 by WorkflowSession).
 
 All configs are written as plain dicts; BaseLLM validates and normalizes
-every one through the ConfigModel schema from ego_py/llm/config.py (the
+every one through the ConfigModel schema from egoai/llm/config.py (the
 single source of truth for the known config keys) at construction time:
 
     self.config = ConfigModel.from_dict(config).to_dict()
@@ -31,10 +31,10 @@ Run directly:
 import os
 import sys
 
-# Make `ego_py` importable when the script is run directly from anywhere.
+# Make `egoai` importable when the script is run directly from anywhere.
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from ego_py import EgoAgent, LLM, WorkflowSession  # noqa: E402
+from egoai import EgoAgent, LLM, WorkflowSession  # noqa: E402
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 WORKSPACE_DIR = os.path.abspath(os.path.join(PROJECT_ROOT, "example_directory"))

@@ -9,6 +9,6 @@ existing directory (otherwise RuntimeError), and every later recorded
 object in the same workflow must resolve to the same directory.
 """
 
-from ego_py.mlops.sessions import WorkflowSession
+from egoai.mlops.sessions import WorkflowSession
 
 __all__ = ["WorkflowSession"]

@@ -4,9 +4,11 @@ Built-in file tools for the agents.
 These tools let an agent operate on files inside a single workspace
 directory. They are meant to be placed inside the LLM tool_registry:
 
-    from agent_logic.agent.builtin_tools.file import build_file_tools
+    from egoai.builtin_tools.file import build_file_tools
+    from egoai.builtin_tools.file import build_read_only_file_tools
 
     tool_registry = build_file_tools("/absolute/path/to/workspace")
+    read_only = build_read_only_file_tools("/absolute/path/to/workspace")
 
 Every tool is a closure bound to that directory: relative paths are resolved
 against it and any path that tries to escape the workspace is rejected.
@@ -19,10 +21,16 @@ Tools:
     delete      - delete a file or a directory tree
     glob        - find files matching a glob pattern
     grep        - search file contents
+    bash        - execute a shell command in the workspace
+
+`build_read_only_file_tools` returns the read-only subset (ls, read_file,
+glob, grep) — no write_file, edit_file, delete or bash — for agents that
+must never modify the workspace.
 """
 import shutil
 from pathlib import Path
 from typing import Callable, Dict
+import subprocess
 
 _MAX_READ_CHARS = 20_000
 _MAX_GREP_RESULTS = 100
@@ -234,6 +242,56 @@ def build_file_tools(directory: str) -> Dict[str, Callable]:
             )
         return "\n".join(results)
 
+    def bash(command: str) -> str:
+        """Execute a shell command in the workspace directory.
+        
+        Security: Rejects any token containing '..' (parent traversal) or starting 
+        with '/' or '~' (absolute/home paths), keeping execution strictly inside 
+        the workspace.
+        """
+        if not isinstance(command, str) or not command.strip():
+            return "Error: command must be a non-empty string"
+
+        # Split command into tokens to inspect arguments (preserves quoted strings poorly,
+        # but sufficient for blocking dangerous path tokens in an LLM context).
+        tokens = command.split()
+        
+        for token in tokens:
+            # Catch '../', '..', '.../etc' etc.
+            if ".." in token:
+                return (
+                    f"Error: '..' is not allowed in bash commands (attempted: {token})"
+                )
+            # Catch absolute paths like /etc/passwd and home paths like ~/.bashrc
+            # Allow flags that start with '-' (e.g., -l, --help).
+            if not token.startswith("-") and (token.startswith("/") or token.startswith("~")):
+                return (
+                    f"Error: absolute/home paths are not allowed in bash commands "
+                    f"(attempted: {token})"
+                )
+
+        try:
+            result = subprocess.run(
+                command,
+                shell=True,
+                cwd=root,
+                capture_output=True,
+                text=True,
+                timeout=60,
+            )
+            output_parts = []
+            if result.stdout:
+                output_parts.append(result.stdout.rstrip())
+            if result.stderr:
+                output_parts.append(result.stderr.rstrip())
+            if result.returncode != 0:
+                output_parts.append(f"[Exit code: {result.returncode}]")
+            return "\n".join(output_parts) if output_parts else "(no output)"
+        except subprocess.TimeoutExpired:
+            return "Error: command timed out after 60 seconds"
+        except Exception as exc:
+            return f"Error executing command: {exc}"
+
     return {
         "ls": ls,
         "read_file": read_file,
@@ -242,4 +300,19 @@ def build_file_tools(directory: str) -> Dict[str, Callable]:
         "delete": delete,
         "glob": glob,
         "grep": grep,
+        "bash":bash
     }
+
+
+def build_read_only_file_tools(directory: str) -> Dict[str, Callable]:
+    """Build the read-only file tool registry for the given workspace
+    directory.
+
+    Returns only the tools that cannot modify anything: ls, read_file, glob
+    and grep. write_file, edit_file, delete and bash are deliberately
+    excluded, so an agent given this registry has no way to create, change
+    or remove files (nor run shell commands). The directory is validated
+    through the same `validate_directory` rules as build_file_tools.
+    """
+    full = build_file_tools(directory)
+    return {name: full[name] for name in ("ls", "read_file", "glob", "grep")}

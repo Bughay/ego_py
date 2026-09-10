@@ -12,7 +12,7 @@ Usage: mix with a concrete provider, e.g.
 
 or via the factory:
 
-    from ego_py import EgoAgent
+    from egoai import EgoAgent
     agent = EgoAgent(agent="agent-swarm", model="deepseek-v4-flash",
                      max_tokens=10000, max_workers=5, ...)
     result = agent.run(task, max_steps=10)
@@ -21,8 +21,8 @@ import contextvars
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict, List
 
-from ego_py.agent.planreact import PlanReactAgent
-from ego_py.agent.react import ReActAgent
+from egoai.agent.planreact import PlanReactAgent
+from egoai.agent.react import ReActAgent
 
 
 class AgentSwarm(PlanReactAgent):
