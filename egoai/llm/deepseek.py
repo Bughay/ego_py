@@ -58,7 +58,7 @@ class DeepseekLLM(BaseLLM):
         allowed_models = [
             "deepseek-v4-flash",
             "deepseek-v4-pro",
-            "deepseek-v4-flash-vision-exp"
+            "deepseek-flash"
         ]
         if value not in allowed_models:
             raise ValueError(f"Available DeepSeek models: {allowed_models}")

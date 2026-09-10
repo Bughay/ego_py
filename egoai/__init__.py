@@ -11,7 +11,7 @@ from .llm.grok import GrokLLM
 from .mlops import WorkflowSession
 from .llm.config import ConfigModel
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
 __all__ = [
     "LLM",

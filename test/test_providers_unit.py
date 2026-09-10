@@ -21,7 +21,7 @@ from test.fakes import FakeClient, FakeMessage, FakeToolCall, FakeUsage
 
 
 class DeepseekLLMTests(unittest.TestCase):
-    ALLOWED = ["deepseek-v4-flash", "deepseek-v4-pro", "deepseek-v4-flash-vision-exp"]
+    ALLOWED = ["deepseek-v4-flash", "deepseek-v4-pro", "deepseek-flash"]
 
     def setUp(self):
         self._old = os.environ.get("DEEPSEEK_API_KEY")

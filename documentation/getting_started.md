@@ -129,7 +129,7 @@ All parameters below are accepted by `LLM(...)`; the agent-only ones are accepte
 
 | Parameter | Type / accepted values | Default | Purpose |
 |---|---|---|---|
-| `model` | `str` (required). DeepSeek: `deepseek-v4-flash`, `deepseek-v4-pro`, `deepseek-v4-flash-vision-exp`. Grok: `grok-4.6`, `grok-4.6-fast`, `grok-4.6-non-reasoning`. | — | Selects the provider (by prefix) and the exact model. Also decides which API key is required. |
+| `model` | `str` (required). DeepSeek: `deepseek-v4-flash`, `deepseek-v4-pro`, `deepseek-flash`. Grok: `grok-4.6`, `grok-4.6-fast`, `grok-4.6-non-reasoning`. | — | Selects the provider (by prefix) and the exact model. Also decides which API key is required. |
 | `max_tokens` | `int`, `1 … 1_000_000` | `10000` | Cap on the model's **generated** tokens. |
 | `temperature` | `float`, `0 … 2` | `0.5` (DeepSeek) / `1.0` (Grok) | Sampling randomness. Grok stores the value but does not send it (see tips). |
 | `reasoning_effort` | DeepSeek: `None \| "low" \| "medium" \| "high"`. Grok: `None \| "low" \| "medium" \| "high" \| "xhigh"`. | `None` | Thinking depth. On DeepSeek, setting it enables thinking mode; `None` disables it. |
@@ -202,7 +202,7 @@ File tools are bound to the workspace: relative paths resolve against it, `..` i
 - Matching is by prefix (`deepseek*`, `grok*`) but the exact name is checked against the provider allowlist. A typo raises `ValueError` at construction — good, fail early.
 - `deepseek-v4-flash` / `grok-4.6-fast` — cheap and fast; the right default for classification, extraction, short answers, and most agent tool loops.
 - `deepseek-v4-pro` / `grok-4.6` — use when the task needs deeper reasoning, long context comprehension, or better planning.
-- `deepseek-v4-flash-vision-exp` — use when the prompt contains images.
+- `deepseek-flash` — the fastest, cheapest DeepSeek option for high-volume, latency-sensitive calls.
 - `grok-4.6-non-reasoning` — use when you want the fastest Grok responses and no thinking overhead.
 - Provider choice is also an operational choice: different API keys, rate limits and outages. For critical workflows, being able to switch `deepseek-v4-flash` → `grok-4.6-fast` by changing one string is the point.
 
